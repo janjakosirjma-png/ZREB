@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Naključni žreb</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #111827, #1f2937);
+      color: white;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 650px;
+      background: #ffffff;
+      color: #111827;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    .description {
+      text-align: center;
+      color: #6b7280;
+      margin-bottom: 25px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 220px;
+      padding: 15px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #2563eb;
+    }
+
+    .counter {
+      text-align: right;
+      color: #6b7280;
+      margin: 8px 0 20px;
+      font-size: 14px;
+    }
+
+    .options {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    select, button {
+      font-size: 16px;
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+
+    select {
+      flex: 1;
+      border: 1px solid #d1d5db;
+      background: white;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #drawBtn {
+      flex: 2;
+      background: #2563eb;
+      color: white;
+    }
+
+    #drawBtn:hover {
+      background: #1d4ed8;
+    }
+
+    #resetBtn {
+      width: 100%;
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    #results {
+      margin-top: 25px;
+      display: none;
+    }
+
+    #results h2 {
+      text-align: center;
+    }
+
+    .winner {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: #f3f4f6;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 20px;
+      font-weight: bold;
+      animation: appear 0.4s ease;
+    }
+
+    .place {
+      font-size: 26px;
+      width: 45px;
+      text-align: center;
+    }
+
+    .winner:first-of-type {
+      background: #fef3c7;
+    }
+
+    .error {
+      color: #dc2626;
+      text-align: center;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    @keyframes appear {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 500px) {
+      .options {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>🎲 Naključni žreb</h1>
+
+  <p class="description">
+    Vnesi do 20 imen. Vsako ime napiši v svojo vrstico.
+  </p>
+
+  <textarea
+    id="names"
+    placeholder="Janez&#10;Maja&#10;Luka&#10;Ana&#10;Miha"
+  ></textarea>
+
+  <div class="counter">
+    <span id="count">0</span> / 20 imen
+  </div>
+
+  <div class="options">
+
+    <select id="winnerCount">
+      <option value="3">Izžrebaj 3 osebe</option>
+      <option value="4">Izžrebaj 4 osebe</option>
+    </select>
+
+    <button id="drawBtn" onclick="drawWinners()">
+      🎲 IZŽREBAJ
+    </button>
+
+  </div>
+
+  <button id="resetBtn" onclick="resetDraw()">
+    Ponastavi
+  </button>
+
+  <div class="error" id="error"></div>
+
+  <div id="results">
+    <h2>🏆 Rezultati žreba</h2>
+    <div id="winnerList"></div>
+  </div>
+
+</div>
+
+
+<script>
+
+const namesInput = document.getElementById("names");
+const countDisplay = document.getElementById("count");
+const errorDisplay = document.getElementById("error");
+const results = document.getElementById("results");
+const winnerList = document.getElementById("winnerList");
+
+
+/* Števec imen */
+
+namesInput.addEventListener("input", function () {
+
+  let names = getNames();
+
+  if (names.length > 20) {
+
+    names = names.slice(0, 20);
+
+    namesInput.value = names.join("\n");
+
+  }
+
+  countDisplay.textContent = names.length;
+
+});
+
+
+/* Pridobi imena */
+
+function getNames() {
+
+  return namesInput.value
+    .split("\n")
+    .map(name => name.trim())
+    .filter(name => name !== "");
+
+}
+
+
+/* Naključno premešaj seznam */
+
+function shuffle(array) {
+
+  const copy = [...array];
+
+  for (let i = copy.length - 1; i > 0; i--) {
+
+    const randomIndex =
+      Math.floor(Math.random() * (i + 1));
+
+    [copy[i], copy[randomIndex]] =
+      [copy[randomIndex], copy[i]];
+
+  }
+
+  return copy;
+
+}
+
+
+/* Izvedi žreb */
+
+function drawWinners() {
+
+  errorDisplay.textContent = "";
+  winnerList.innerHTML = "";
+  results.style.display = "none";
+
+  let names = getNames();
+
+  /* odstrani podvojena imena */
+
+  names = [...new Set(names)];
+
+  const numberOfWinners =
+    parseInt(document.getElementById("winnerCount").value);
+
+
+  if (names.length > 20) {
+
+    errorDisplay.textContent =
+      "Vneseš lahko največ 20 imen.";
+
+    return;
+
+  }
+
+
+  if (names.length < numberOfWinners) {
+
+    errorDisplay.textContent =
+      `Za žreb potrebuješ vsaj ${numberOfWinners} različnih imen.`;
+
+    return;
+
+  }
+
+
+  /* Naključni žreb */
+
+  const shuffled = shuffle(names);
+
+  const winners =
+    shuffled.slice(0, numberOfWinners);
+
+
+  const medals = [
+    "🥇",
+    "🥈",
+    "🥉",
+    "🏅"
+  ];
+
+
+  /* Prikaži rezultate */
+
+  winners.forEach((winner, index) => {
+
+    const div = document.createElement("div");
+
+    div.className = "winner";
+
+    div.innerHTML = `
+      <span class="place">${medals[index]}</span>
+      <span>${index + 1}. mesto: ${escapeHTML(winner)}</span>
+    `;
+
+    winnerList.appendChild(div);
+
+  });
+
+
+  results.style.display = "block";
+
+}
+
+
+/* Zaščita pred HTML kodo v imenih */
+
+function escapeHTML(text) {
+
+  const div = document.createElement("div");
+
+  div.textContent = text;
+
+  return div.innerHTML;
+
+}
+
+
+/* Ponastavitev */
+
+function resetDraw() {
+
+  namesInput.value = "";
+
+  countDisplay.textContent = "0";
+
+  winnerList.innerHTML = "";
+
+  errorDisplay.textContent = "";
+
+  results.style.display = "none";
+
+}
+
+</script>
+
+</body>
+</html>
